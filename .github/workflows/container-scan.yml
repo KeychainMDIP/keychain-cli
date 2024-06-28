@@ -1,0 +1,37 @@
+name: build
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-20.04
+    strategy:
+          matrix:
+            image:
+              - "image1"
+              - "image2"
+              - "image3"
+
+    steps:
+      # Run Trivy docker image scan
+      - name: Run Trivy image vulnerability scanner
+        id: trivy
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ${{ matrix.image }}
+          format: "sarif"
+          output: "trivy-${{ matrix.image }}.sarif"
+          ignore-unfixed: true
+          vuln-type: "os,library"
+          security-checks: "vuln"
+
+      # Upload image report to GitHub Security
+      - name: Upload Trivy image scan results
+        id: upload-results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          category: "trivy-${{ matrix.image }}"
+          sarif_file: "trivy-${{ matrix.image }}.sarif"
